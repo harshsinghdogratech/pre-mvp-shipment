@@ -88,7 +88,7 @@ export default function AdminShipmentsPage() {
           >
             <Send className="h-16 w-16 text-slate-600 mb-4" />
             <p className="text-lg font-medium text-slate-300">No shipment requests right now.</p>
-            <p className="text-sm text-slate-500">Clients haven't requested any new shipments.</p>
+            <p className="text-sm text-slate-500">Clients haven&apos;t requested any new shipments.</p>
           </motion.div>
         ) : (
           filteredRows.map((p, i) => (
