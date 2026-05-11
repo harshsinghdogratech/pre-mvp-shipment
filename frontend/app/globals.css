@@ -3,5 +3,14 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-background text-slate-100 antialiased selection:bg-accent/30 selection:text-accent-cyan;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-panel/60 backdrop-blur-md border border-white/10 shadow-glass;
+  }
+  .glass-card {
+    @apply bg-panel/80 backdrop-blur-xl border border-white/5 shadow-lg;
+  }
 }

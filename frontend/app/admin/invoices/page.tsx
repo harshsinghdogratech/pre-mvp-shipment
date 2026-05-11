@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import type { InvoiceDetail, InvoicePending } from "@/lib/types";
 import { Modal } from "@/components/Modal";
+import { motion } from "framer-motion";
+import { FileText, CheckCircle2, XCircle, Search, Download, Eye } from "lucide-react";
 
 const PREVIEW_IMAGE = new Set(["png", "jpg", "jpeg"]);
 
@@ -16,6 +18,7 @@ export default function AdminInvoicesPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -112,71 +115,116 @@ export default function AdminInvoicesPage() {
     }
   }
 
-  return (
-    <div>
-      <h1 className="text-2xl font-semibold text-slate-900">Invoice Reviews</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Pending invoices awaiting your decision.
-      </p>
+  const filteredRows = rows.filter(r => 
+    r.package_title.toLowerCase().includes(search.toLowerCase()) || 
+    r.client_name.toLowerCase().includes(search.toLowerCase())
+  );
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-600">
-            <tr>
-              <th className="px-6 py-3">Package</th>
-              <th className="px-6 py-3">Client</th>
-              <th className="px-6 py-3">File</th>
-              <th className="px-6 py-3">Uploaded</th>
-              <th className="px-6 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
-                  Nothing pending — you are all caught up.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
-                <tr key={r.id}>
-                  <td className="px-6 py-3 font-medium text-slate-900">
-                    {r.package_title}
-                  </td>
-                  <td className="px-6 py-3 text-slate-700">
-                    {r.client_name}
-                    <div className="text-xs text-slate-500">{r.client_email}</div>
-                  </td>
-                  <td className="px-6 py-3 text-slate-700">
-                    {r.original_file_name}
-                  </td>
-                  <td className="px-6 py-3 text-slate-600">
-                    {new Date(r.uploaded_at).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => openReview(r)}
-                      className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                    >
-                      Review
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+  return (
+    <div className="max-w-6xl mx-auto pb-12 space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-3xl font-bold text-white tracking-tight">Invoice Reviews</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            Pending invoices awaiting your decision.
+          </p>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative"
+        >
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search pending invoices..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="block w-full sm:w-80 pl-10 pr-3 py-2 border border-white/10 rounded-xl bg-panel/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple transition-all backdrop-blur-md"
+          />
+        </motion.div>
       </div>
 
+      <div className="space-y-4">
+        {filteredRows.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-20 glass-card rounded-2xl border-dashed border-white/20"
+          >
+            <CheckCircle2 className="h-16 w-16 text-slate-600 mb-4" />
+            <p className="text-lg font-medium text-slate-300">Nothing pending!</p>
+            <p className="text-sm text-slate-500">You are all caught up.</p>
+          </motion.div>
+        ) : (
+          filteredRows.map((r, i) => (
+            <motion.div
+              key={r.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+              whileHover={{ scale: 1.01, backgroundColor: "rgba(30, 41, 59, 0.8)" }}
+              className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl glass-panel transition-all border-l-4 border-l-accent-warning"
+            >
+              <div className="flex items-start gap-4 flex-1">
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 border border-white/5 flex items-center justify-center shadow-lg">
+                  <FileText className="h-6 w-6 text-accent-warning" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{r.package_title}</h3>
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-slate-400">
+                    <span className="text-slate-300">{r.client_name}</span>
+                    <span className="text-slate-500">({r.client_email})</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-accent-cyan truncate max-w-[200px]">{r.original_file_name}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6 md:ml-auto">
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">Uploaded</span>
+                  <span className="text-sm text-slate-300">{new Date(r.uploaded_at).toLocaleString()}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openReview(r)}
+                  className="rounded-xl bg-white/5 border border-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-all shadow-lg flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4 text-accent-cyan" />
+                  Review
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* Preview Modal */}
       <Modal
         open={open}
-        title={active ? `Review: ${active.original_file_name}` : "Review"}
+        title={active ? `Review Invoice` : "Review"}
         onClose={closeModal}
       >
         {active && (
-          <div className="space-y-4">
-            <div className="max-h-[60vh] overflow-auto rounded-lg border border-slate-200 bg-slate-50">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 bg-panelHover p-4 rounded-xl border border-white/5">
+              <FileText className="w-8 h-8 text-accent-purple" />
+              <div>
+                <p className="font-semibold text-white truncate max-w-sm">{active.original_file_name}</p>
+                <p className="text-xs text-slate-400 uppercase">Package: {active.package_id}</p>
+              </div>
+            </div>
+
+            <div className="max-h-[50vh] overflow-auto rounded-xl border border-white/10 bg-black/50 relative">
               {active.file_type === "pdf" && previewUrl && (
                 <iframe
                   title="invoice"
@@ -189,26 +237,24 @@ export default function AdminInvoicesPage() {
                 <img
                   alt="invoice"
                   src={previewUrl}
-                  className="max-h-[50vh] w-auto object-contain"
+                  className="w-full h-auto object-contain"
                 />
               )}
               {!(active.file_type === "pdf" || PREVIEW_IMAGE.has(active.file_type)) && (
-                <div className="p-6 text-sm text-slate-600">
-                  Preview is not available for this file type. Use{" "}
-                  <span className="font-semibold">Download file</span> below.
+                <div className="p-12 text-center text-sm text-slate-400 flex flex-col items-center">
+                  <Download className="w-12 h-12 mb-4 text-slate-600" />
+                  Preview is not available for this file type.
                 </div>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {active &&
-                !(active.file_type === "pdf" || PREVIEW_IMAGE.has(active.file_type)) && (
+
+            <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-white/10">
+              {!(active.file_type === "pdf" || PREVIEW_IMAGE.has(active.file_type)) && (
                 <button
                   type="button"
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
+                  className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 flex items-center gap-2 transition-all mr-auto"
                   onClick={async () => {
-                    const res = await api.get(`/invoices/${active.id}/file`, {
-                      responseType: "blob",
-                    });
+                    const res = await api.get(`/invoices/${active.id}/file`, { responseType: "blob" });
                     const url = URL.createObjectURL(res.data);
                     const a = document.createElement("a");
                     a.href = url;
@@ -217,67 +263,70 @@ export default function AdminInvoicesPage() {
                     URL.revokeObjectURL(url);
                   }}
                 >
-                  Download file
+                  <Download className="w-4 h-4" /> Download
                 </button>
               )}
               <button
                 type="button"
                 disabled={busy}
-                onClick={approve}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                onClick={() => setRejectOpen(true)}
+                className="rounded-xl bg-accent-error/20 border border-accent-error/30 text-accent-error px-6 py-2 text-sm font-bold hover:bg-accent-error/30 disabled:opacity-50 transition-all flex items-center gap-2"
               >
-                Approve
+                <XCircle className="w-4 h-4" /> Reject
               </button>
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => setRejectOpen(true)}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                onClick={approve}
+                className="rounded-xl bg-gradient-to-r from-accent-success to-emerald-600 px-6 py-2 text-sm font-bold text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:brightness-110 disabled:opacity-50 transition-all flex items-center gap-2"
               >
-                Reject
+                <CheckCircle2 className="w-4 h-4" /> Approve
               </button>
             </div>
           </div>
         )}
       </Modal>
 
+      {/* Reject Modal */}
       <Modal
         open={rejectOpen}
-        title="Reject invoice"
+        title="Reject Invoice"
         onClose={() => {
           setRejectOpen(false);
           setReason("");
         }}
       >
-        <p className="text-sm text-slate-600">
-          The client will be asked to upload a new invoice.
-        </p>
-        <textarea
-          className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          rows={4}
-          placeholder="Reason (required)"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            onClick={() => {
-              setRejectOpen(false);
-              setReason("");
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={reject}
-            className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-          >
-            Submit rejection
-          </button>
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Please provide a reason for rejecting this invoice. The client will be notified.
+          </p>
+          <textarea
+            className="w-full rounded-xl bg-panelHover/50 border border-white/10 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition-all focus:border-accent-error focus:ring-1 focus:ring-accent-error resize-none"
+            rows={4}
+            placeholder="E.g., The amount doesn't match the PO."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <button
+              type="button"
+              className="rounded-xl px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              onClick={() => {
+                setRejectOpen(false);
+                setReason("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={busy || !reason.trim()}
+              onClick={reject}
+              className="rounded-xl bg-accent-error px-6 py-2 text-sm font-bold text-white shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:brightness-110 disabled:opacity-50 transition-all"
+            >
+              Submit Rejection
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
