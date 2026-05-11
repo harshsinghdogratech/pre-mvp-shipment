@@ -1,38 +1,52 @@
-import type { InvoiceStatus, PackageStatus } from "@/lib/types";
+"use client";
 
-const pkgStyles: Record<PackageStatus, string> = {
-  pending_invoice: "bg-accent-warning/10 text-accent-warning border-accent-warning/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]",
-  invoice_uploaded: "bg-accent/10 text-accent border-accent/30 shadow-[0_0_10px_rgba(37,99,235,0.2)]",
-  approved: "bg-accent-success/10 text-accent-success border-accent-success/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]",
-  rejected: "bg-accent-error/10 text-accent-error border-accent-error/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]",
-  shipment_requested: "bg-accent-purple/10 text-accent-purple border-accent-purple/30 shadow-[0_0_10px_rgba(124,58,237,0.2)]",
-  shipped: "bg-accent-cyan/10 text-accent-cyan border-accent-cyan/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]",
+import { PackageStatus } from "@/lib/types";
+
+const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
+  pending_invoice: {
+    label: "Pending Invoice",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+  },
+  invoice_uploaded: {
+    label: "Invoice Uploaded",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+  },
+  approved: {
+    label: "Approved",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+  },
+  rejected: {
+    label: "Rejected",
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+  },
+  shipment_requested: {
+    label: "Shipment Requested",
+    bg: "bg-indigo-50",
+    text: "text-indigo-700",
+  },
+  shipped: {
+    label: "Shipped",
+    bg: "bg-slate-100",
+    text: "text-slate-700",
+  },
 };
 
-const invStyles: Record<InvoiceStatus, string> = {
-  pending: "bg-accent-warning/10 text-accent-warning border-accent-warning/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]",
-  approved: "bg-accent-success/10 text-accent-success border-accent-success/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]",
-  rejected: "bg-accent-error/10 text-accent-error border-accent-error/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]",
-};
+export function PackageStatusBadge({ status }: { status: string }) {
+  const config = statusConfig[status] || {
+    label: status,
+    bg: "bg-slate-50",
+    text: "text-slate-600",
+  };
 
-export function PackageStatusBadge({ status }: { status: PackageStatus }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${pkgStyles[status]} transition-shadow`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${config.bg} ${config.text} border border-current/10`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full mr-2 ${pkgStyles[status].split(' ')[1].replace('text-', 'bg-')} animate-pulse-slow`} />
-      {status.replace(/_/g, " ")}
-    </span>
-  );
-}
-
-export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${invStyles[status]} transition-shadow`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full mr-2 ${invStyles[status].split(' ')[1].replace('text-', 'bg-')} animate-pulse-slow`} />
-      {status}
+      {config.label}
     </span>
   );
 }

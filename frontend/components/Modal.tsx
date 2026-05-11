@@ -41,12 +41,12 @@ export function Modal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative z-10 w-full max-w-lg rounded-2xl glass-card p-6 shadow-2xl border border-white/10 bg-panel/90"
+            className="relative z-10 w-full max-w-lg rounded-2xl glass-card p-6 shadow-2xl border border-red-900/20 bg-panel/90"
           >
             {/* Ambient inner glow */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-2xl pointer-events-none" />
             
-            <div className="relative mb-6 flex items-center justify-between gap-4 border-b border-white/5 pb-4">
+            <div className="relative mb-6 flex items-center justify-between gap-4 border-b border-red-900/10 pb-4">
               <h2 className="text-xl font-bold text-white tracking-wide">{title}</h2>
               <button
                 type="button"

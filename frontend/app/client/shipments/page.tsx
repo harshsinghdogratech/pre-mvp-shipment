@@ -6,132 +6,146 @@ import { api } from "@/lib/api";
 import type { PackageRow } from "@/lib/types";
 import { PackageStatusBadge } from "@/components/StatusBadge";
 import { motion } from "framer-motion";
-import { Ship, CheckCircle2, FileText, Send, PackageSearch } from "lucide-react";
+import { Ship, Search, Package, Calendar, MapPin, ArrowRight } from "lucide-react";
 
 export default function ClientShipmentsPage() {
   const [rows, setRows] = useState<PackageRow[]>([]);
+  const [search, setSearch] = useState("");
+
+  async function load() {
+    try {
+      const { data } = await api.get<PackageRow[]>("/packages");
+      // Filter for packages that have requested shipment or are already shipped
+      setRows(data.filter((p) => p.status === "shipment_requested" || p.status === "shipped"));
+    } catch {
+      toast.error("Failed to load shipment status");
+    }
+  }
 
   useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get<PackageRow[]>("/packages");
-        // Show packages that are in progress or shipped
-        setRows(data.filter((p) => ["approved", "shipment_requested", "shipped"].includes(p.status)));
-      } catch {
-        toast.error("Failed to load shipments");
-      }
-    })();
+    load();
   }, []);
 
-  const steps = [
-    { key: "pending_invoice", label: "Package Created", icon: PackageSearch },
-    { key: "invoice_uploaded", label: "Invoice Uploaded", icon: FileText },
-    { key: "approved", label: "Invoice Approved", icon: CheckCircle2 },
-    { key: "shipment_requested", label: "Shipment Requested", icon: Send },
-    { key: "shipped", label: "Shipped", icon: Ship },
-  ];
-
-  const getStepIndex = (status: string) => {
-    return steps.findIndex(s => s.key === status) ?? 0;
-  };
+  const filtered = rows.filter((r) =>
+    (r.title || "").toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <h1 className="text-3xl font-bold text-white tracking-tight">Shipment Status</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Track your package shipment progress.
-        </p>
+    <div className="max-w-6xl mx-auto pb-12 space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="page-title">Shipment Status</h1>
+        <p className="page-subtitle">Track your packages currently in transit to Aruba.</p>
       </motion.div>
 
-      <div className="space-y-6">
-        {rows.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 glass-card rounded-2xl border-dashed border-white/20"
-          >
-            <Ship className="h-16 w-16 text-slate-600 mb-4" />
-            <p className="text-lg font-medium text-slate-300">No shipments found.</p>
-            <p className="text-sm text-slate-500">Packages that are approved or shipped will appear here.</p>
-          </motion.div>
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-slate-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search by package name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="input-field pl-10"
+        />
+      </div>
+
+      <div className="space-y-3">
+        {filtered.length === 0 ? (
+          <div className="card p-12 flex flex-col items-center justify-center text-center">
+            <Ship className="w-12 h-12 text-slate-200 mb-4" />
+            <p className="text-slate-500">No active shipments found.</p>
+          </div>
         ) : (
-          rows.map((p, index) => {
-            const currentIndex = getStepIndex(p.status);
-            
-            return (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="rounded-2xl glass-panel p-6 sm:p-8"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-cyan to-accent flex items-center justify-center shadow-neon-blue">
-                      <Ship className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{p.title}</h3>
-                      <p className="text-sm text-slate-400">Shipment to Aruba</p>
+          filtered.map((p, i) => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="card p-5 hover:border-primary/30 transition-colors"
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
+                    p.status === "shipped" ? "bg-emerald-50" : "bg-indigo-50"
+                  }`}>
+                    {p.status === "shipped" ? (
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    ) : (
+                      <Ship className="w-6 h-6 text-indigo-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{p.title}</h3>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 font-medium">
+                      <span className="flex items-center gap-1 uppercase tracking-wider">
+                        <MapPin className="w-3 h-3 text-primary" />
+                        Destination: Aruba
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Updated {new Date(p.updated_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="text-right hidden sm:block">
                     <PackageStatusBadge status={p.status} />
-                    <span className="text-xs text-slate-500">Updated: {new Date(p.updated_at).toLocaleString()}</span>
+                    <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Status</p>
+                  </div>
+                  <div className="sm:hidden">
+                    <PackageStatusBadge status={p.status} />
                   </div>
                 </div>
-
-                <div className="relative pl-6 sm:pl-10 py-4">
-                  {/* Timeline vertical line */}
-                  <div className="absolute left-[33px] sm:left-[49px] top-8 bottom-8 w-0.5 bg-white/10" />
-                  
-                  <div className="space-y-8 relative">
-                    {steps.map((step, i) => {
-                      const isCompleted = i <= currentIndex;
-                      const isCurrent = i === currentIndex;
-                      const StepIcon = step.icon;
-                      
-                      let nodeColor = "bg-panel border-white/20 text-slate-500";
-                      let glow = "";
-                      
-                      if (isCurrent) {
-                        nodeColor = "bg-accent border-accent-cyan text-white";
-                        glow = "shadow-neon-blue";
-                      } else if (isCompleted) {
-                        nodeColor = "bg-accent-success border-accent-success text-white";
-                        glow = "shadow-[0_0_10px_rgba(16,185,129,0.5)]";
-                      }
-
-                      return (
-                        <div key={step.key} className="flex items-start gap-6 relative z-10">
-                          <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-500 ${nodeColor} ${glow}`}>
-                            <StepIcon className="w-5 h-5" />
-                          </div>
-                          <div className="pt-2">
-                            <h4 className={`text-sm font-bold ${isCompleted ? 'text-white' : 'text-slate-500'}`}>
-                              {step.label}
-                            </h4>
-                            {isCurrent && (
-                              <p className="text-xs text-accent-cyan mt-1">Current Status</p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              </div>
+              
+              {/* Progress Bar UI */}
+              <div className="mt-8 pt-6 border-t border-slate-50">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 px-1">
+                  <span>Processing</span>
+                  <span>In Transit</span>
+                  <span>Delivered</span>
                 </div>
-              </motion.div>
-            );
-          })
+                <div className="relative h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: p.status === "shipped" ? "100%" : "66%" }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className={`absolute h-full rounded-full ${
+                      p.status === "shipped" ? "bg-emerald-500" : "bg-primary shadow-[0_0_8px_rgba(249,115,22,0.4)]"
+                    }`}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ))
         )}
       </div>
     </div>
+  );
+}
+
+function CheckCircle2(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
   );
 }

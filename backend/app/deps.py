@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -14,13 +14,20 @@ security = HTTPBearer(auto_error=False)
 def get_current_user(
     db: Annotated[Session, Depends(get_db)],
     creds: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+    token_param: Annotated[str | None, Query(alias="token")] = None,
 ) -> User:
-    if creds is None or creds.scheme.lower() != "bearer":
+    token_str = None
+    if creds and creds.scheme.lower() == "bearer":
+        token_str = creds.credentials
+    elif token_param:
+        token_str = token_param
+
+    if not token_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
-    payload = decode_token(creds.credentials)
+    payload = decode_token(token_str)
     if not payload or "sub" not in payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -6,21 +6,23 @@ import { api } from "@/lib/api";
 import type { PackageRow } from "@/lib/types";
 import { PackageStatusBadge } from "@/components/StatusBadge";
 import { motion } from "framer-motion";
-import { Ship, User, Search, CheckCircle2 } from "lucide-react";
+import { Ship, Search, Package, User, Calendar, CheckCircle2 } from "lucide-react";
 
 export default function AdminShippedPage() {
   const [rows, setRows] = useState<PackageRow[]>([]);
   const [search, setSearch] = useState("");
 
+  async function load() {
+    try {
+      const { data } = await api.get<PackageRow[]>("/packages");
+      setRows(data.filter((p) => p.status === "shipped"));
+    } catch {
+      toast.error("Failed to load shipped packages");
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get<PackageRow[]>("/packages");
-        setRows(data.filter((p) => p.status === "shipped"));
-      } catch {
-        toast.error("Failed to load shipped packages");
-      }
-    })();
+    load();
   }, []);
 
   const filteredRows = rows.filter(r => 
@@ -29,78 +31,62 @@ export default function AdminShippedPage() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-3xl font-bold text-white tracking-tight">Shipped Packages</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Completed shipments for your records.
-          </p>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative"
-        >
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search records..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="block w-full sm:w-80 pl-10 pr-3 py-2 border border-white/10 rounded-xl bg-panel/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-success/50 focus:border-accent-success transition-all backdrop-blur-md"
-          />
-        </motion.div>
+    <div className="max-w-6xl mx-auto pb-12 space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="page-title">Shipped Packages</h1>
+        <p className="page-subtitle">History of all packages successfully shipped to Aruba.</p>
+      </motion.div>
+
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-slate-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search shipped history..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="input-field pl-10"
+        />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredRows.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-20 glass-card rounded-2xl border-dashed border-white/20"
-          >
-            <Ship className="h-16 w-16 text-slate-600 mb-4" />
-            <p className="text-lg font-medium text-slate-300">No shipped packages yet.</p>
-            <p className="text-sm text-slate-500">Packages marked as shipped will appear here.</p>
-          </motion.div>
+          <div className="card p-12 flex flex-col items-center justify-center text-center">
+            <CheckCircle2 className="w-12 h-12 text-slate-200 mb-4" />
+            <p className="text-slate-500">No shipped packages recorded yet.</p>
+          </div>
         ) : (
           filteredRows.map((p, i) => (
             <motion.div
               key={p.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
-              whileHover={{ scale: 1.01, backgroundColor: "rgba(30, 41, 59, 0.8)" }}
-              className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl glass-panel transition-all border-l-4 border-l-accent-cyan"
+              transition={{ delay: i * 0.03 }}
+              className="card p-4 hover:border-emerald-200 transition-colors flex flex-col md:flex-row md:items-center gap-4 group"
             >
-              <div className="flex items-start gap-4 flex-1">
-                <div className="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-accent-cyan to-accent flex items-center justify-center shadow-lg">
-                  <CheckCircle2 className="h-6 w-6 text-white" />
+              <div className="flex items-center gap-4 flex-1">
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                  <Ship className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{p.title}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="w-3 h-3 text-slate-400" />
-                    <span className="text-sm text-slate-300">{p.client_name}</span>
-                    <span className="text-xs text-slate-500">({p.client_email})</span>
+                  <h3 className="font-semibold text-slate-900 leading-none">{p.title}</h3>
+                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {p.client_name}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      Shipped on {new Date(p.updated_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-6 md:ml-auto">
-                <div className="flex flex-col items-end gap-2">
-                  <PackageStatusBadge status={p.status} />
-                  <span className="text-xs text-slate-500">Shipped on: {new Date(p.updated_at).toLocaleString()}</span>
-                </div>
+              <div className="flex items-center gap-6">
+                <PackageStatusBadge status={p.status} />
               </div>
             </motion.div>
           ))
