@@ -73,8 +73,8 @@ export default function AdminPackagesPage() {
   }
 
   const filteredPackages = packages.filter(p => 
-    p.title.toLowerCase().includes(search.toLowerCase()) || 
-    p.client_name.toLowerCase().includes(search.toLowerCase())
+    (p.title || "").toLowerCase().includes(search.toLowerCase()) || 
+    (p.client_name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (

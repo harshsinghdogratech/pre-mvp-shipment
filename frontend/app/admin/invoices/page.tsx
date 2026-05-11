@@ -116,8 +116,8 @@ export default function AdminInvoicesPage() {
   }
 
   const filteredRows = rows.filter(r => 
-    r.package_title.toLowerCase().includes(search.toLowerCase()) || 
-    r.client_name.toLowerCase().includes(search.toLowerCase())
+    (r.package_title || "").toLowerCase().includes(search.toLowerCase()) || 
+    (r.client_name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (

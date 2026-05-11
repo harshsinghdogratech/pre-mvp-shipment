@@ -42,8 +42,8 @@ export default function AdminShipmentsPage() {
   }
 
   const filteredRows = rows.filter(r => 
-    r.title.toLowerCase().includes(search.toLowerCase()) || 
-    r.client_name.toLowerCase().includes(search.toLowerCase())
+    (r.title || "").toLowerCase().includes(search.toLowerCase()) || 
+    (r.client_name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
