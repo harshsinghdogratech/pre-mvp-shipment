@@ -67,7 +67,11 @@ export default function ClientPackagesPage() {
     fd.append("file", file);
     setBusy(true);
     try {
-      await api.post("/invoices/upload", fd);
+      await api.post("/invoices/upload", fd, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       toast.success("Invoice uploaded");
       setUploadOpen(false);
       setUploadPkg(null);
