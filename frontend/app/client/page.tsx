@@ -24,7 +24,7 @@ export default function ClientDashboard() {
 
   const cards = [
     { label: "My Total Packages", value: stats?.total_packages ?? "—", icon: Package, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Pending Uploads", value: stats?.pending_invoices ?? "—", icon: FileUp, color: "text-amber-500", bg: "bg-amber-50" },
+    { label: "Pending Uploads", value: stats?.pending_uploads ?? "—", icon: FileUp, color: "text-amber-500", bg: "bg-amber-50" },
     { label: "Approved Packages", value: stats?.approved_packages ?? "—", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
     { label: "Shipped Packages", value: stats?.shipped_packages ?? "—", icon: Ship, color: "text-blue-500", bg: "bg-blue-50" },
   ];
