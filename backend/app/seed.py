@@ -85,7 +85,7 @@ def ensure_client_suite_numbers(db: Session) -> None:
 
 
 def seed_if_empty(db: Session) -> None:
-    if db.execute(select(User).limit(1)).scalar_one_or_none() is not None:
+    if db.scalars(select(User).limit(1)).first() is not None:
         return
 
     admin = User(

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import Base, engine, SessionLocal
+from app.database import Base, engine, SessionLocal, ensure_schema_compat
 from app.routers import admin, auth, client_routes
 from app.seed import (
     ensure_client_suite_numbers,
@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
         )
 
     Base.metadata.create_all(bind=engine)
+    ensure_schema_compat()
 
     upload_root = (
         Path(__file__).resolve().parent.parent / "uploads" / "invoices"
