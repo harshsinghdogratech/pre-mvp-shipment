@@ -1,17 +1,22 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import Base, engine
-from app.routers import auth, invoices, packages, stats, users
-from app.seed import seed_if_empty
-from app.database import SessionLocal
+from app.database import Base, engine, SessionLocal
+from app.routers import admin, auth, client_routes
+from app.seed import (
+    ensure_client_suite_numbers,
+    reconcile_demo_accounts,
+    seed_if_empty,
+)
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Pre-MVP Shipment API", version="0.1.0")
+    app = FastAPI(title="Ship2Aruba API", version="0.2.0")
 
     app.add_middleware(
         CORSMiddleware,
@@ -21,22 +26,43 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": "Validation error",
+                "code": "VALIDATION_ERROR",
+                "details": exc.errors(),
+            },
+        )
+
     Base.metadata.create_all(bind=engine)
 
-    upload_root = Path(__file__).resolve().parent.parent / "uploads" / "invoices"
+    upload_root = (
+        Path(__file__).resolve().parent.parent / "uploads" / "invoices"
+    )
     upload_root.mkdir(parents=True, exist_ok=True)
 
     db = SessionLocal()
     try:
         seed_if_empty(db)
+        reconcile_demo_accounts(db)
+        ensure_client_suite_numbers(db)
     finally:
         db.close()
 
-    app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-    app.include_router(users.router, prefix="/api/users", tags=["users"])
-    app.include_router(stats.router, prefix="/api", tags=["stats"])
-    app.include_router(packages.router, prefix="/api", tags=["packages"])
-    app.include_router(invoices.router, prefix="/api", tags=["invoices"])
+    app.include_router(
+        auth.router, prefix="/api/auth", tags=["auth"]
+    )
+    app.include_router(
+        admin.router, prefix="/api/admin", tags=["admin"]
+    )
+    app.include_router(
+        client_routes.router, prefix="/api/client", tags=["client"]
+    )
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

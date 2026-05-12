@@ -3,149 +3,124 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import type { PackageRow } from "@/lib/types";
-import { PackageStatusBadge } from "@/components/StatusBadge";
-import { motion } from "framer-motion";
-import { Ship, Search, Package, Calendar, MapPin, ArrowRight } from "lucide-react";
+import type { ClientShipmentItem } from "@/lib/types";
+import { StatusBadge } from "@/components/StatusBadge";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { EmptyState } from "@/components/EmptyState";
+import { Ship, Calendar, Package } from "lucide-react";
+
+const STATUS_ORDER: Record<string, number> = {
+  shipped: 1,
+  ready_for_pickup: 2,
+  delivered: 3,
+};
 
 export default function ClientShipmentsPage() {
-  const [rows, setRows] = useState<PackageRow[]>([]);
-  const [search, setSearch] = useState("");
-
-  async function load() {
-    try {
-      const { data } = await api.get<PackageRow[]>("/packages");
-      // Filter for packages that have requested shipment or are already shipped
-      setRows(data.filter((p) => p.status === "shipment_requested" || p.status === "shipped"));
-    } catch {
-      toast.error("Failed to load shipment status");
-    }
-  }
+  const [items, setItems] = useState<ClientShipmentItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    load();
+    const fetchShipments = async () => {
+      try {
+        const { data } = await api.get<ClientShipmentItem[]>("/client/shipments");
+        const sorted = data.sort((a, b) => {
+          const orderA = STATUS_ORDER[a.status] ?? 99;
+          const orderB = STATUS_ORDER[b.status] ?? 99;
+          if (orderA !== orderB) return orderA - orderB;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
+        setItems(sorted);
+      } catch {
+        toast.error("Failed to load shipments");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchShipments();
   }, []);
 
-  const filtered = rows.filter((r) =>
-    (r.title || "").toLowerCase().includes(search.toLowerCase())
-  );
+  if (loading) return <LoadingSpinner size="lg" />;
+
+  const grouped = items.reduce<Record<string, ClientShipmentItem[]>>((acc, item) => {
+    if (!acc[item.status]) acc[item.status] = [];
+    acc[item.status].push(item);
+    return acc;
+  }, {});
+
+  const groupOrder = ["shipped", "ready_for_pickup", "delivered"];
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Shipment Status</h1>
-        <p className="page-subtitle">Track your packages currently in transit to Aruba.</p>
-      </motion.div>
-
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-slate-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Search by package name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-field pl-10"
-        />
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div>
+        <h1 className="page-title flex items-center gap-2">
+          <Ship className="h-6 w-6 text-[#00C9B1]" /> Shipment Status
+        </h1>
+        <p className="page-subtitle">Track your packages currently in transit or delivered.</p>
       </div>
 
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <div className="card p-12 flex flex-col items-center justify-center text-center">
-            <Ship className="w-12 h-12 text-slate-200 mb-4" />
-            <p className="text-slate-500">No active shipments found.</p>
-          </div>
-        ) : (
-          filtered.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="card p-5 hover:border-primary/30 transition-colors"
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${
-                    p.status === "shipped" ? "bg-emerald-50" : "bg-indigo-50"
-                  }`}>
-                    {p.status === "shipped" ? (
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                    ) : (
-                      <Ship className="w-6 h-6 text-indigo-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">{p.title}</h3>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 font-medium">
-                      <span className="flex items-center gap-1 uppercase tracking-wider">
-                        <MapPin className="w-3 h-3 text-primary" />
-                        Destination: Aruba
-                      </span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+      {items.length === 0 ? (
+        <EmptyState
+          icon={<Ship className="h-8 w-8" />}
+          title="No shipments yet"
+          description="Your shipped packages will appear here once an admin processes your ship request."
+        />
+      ) : (
+        groupOrder.map((status) => {
+          const group = grouped[status];
+          if (!group || group.length === 0) return null;
+          return (
+            <div key={status} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <StatusBadge status={status} />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  {group.length} package{group.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {group.map((item) => (
+                  <div
+                    key={item.id}
+                    className="card p-5 flex items-center gap-4"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      status === "delivered"
+                        ? "bg-[#059669]/10"
+                        : status === "ready_for_pickup"
+                        ? "bg-[#F97316]/10"
+                        : "bg-[#06B6D4]/10"
+                    }`}>
+                      <Package className={`w-5 h-5 ${
+                        status === "delivered"
+                          ? "text-[#059669]"
+                          : status === "ready_for_pickup"
+                          ? "text-[#F97316]"
+                          : "text-[#06B6D4]"
+                      }`} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-slate-900 text-sm truncate">
+                        {item.contents_description}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Tracking: {item.tracking_number}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        Updated {new Date(p.updated_at).toLocaleDateString()}
+                        {new Date(item.updated_at).toLocaleDateString()}
                       </span>
+                      <StatusBadge status={item.status} />
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right hidden sm:block">
-                    <PackageStatusBadge status={p.status} />
-                    <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Status</p>
-                  </div>
-                  <div className="sm:hidden">
-                    <PackageStatusBadge status={p.status} />
-                  </div>
-                </div>
+                ))}
               </div>
-              
-              {/* Progress Bar UI */}
-              <div className="mt-8 pt-6 border-t border-slate-50">
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 px-1">
-                  <span>Processing</span>
-                  <span>In Transit</span>
-                  <span>Delivered</span>
-                </div>
-                <div className="relative h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: p.status === "shipped" ? "100%" : "66%" }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className={`absolute h-full rounded-full ${
-                      p.status === "shipped" ? "bg-emerald-500" : "bg-primary shadow-[0_0_8px_rgba(249,115,22,0.4)]"
-                    }`}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
+            </div>
+          );
+        })
+      )}
     </div>
-  );
-}
-
-function CheckCircle2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }

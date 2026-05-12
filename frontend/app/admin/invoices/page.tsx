@@ -3,252 +3,252 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import type { InvoicePending } from "@/lib/types";
-import { PackageStatusBadge } from "@/components/StatusBadge";
-import { Search, FileText, CheckCircle2, XCircle, User, Package, ExternalLink, Calendar } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import type { InvoicePendingRow } from "@/lib/types";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { EmptyState } from "@/components/EmptyState";
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { InvoicePreviewModal } from "@/components/InvoicePreviewModal";
+import { fetchInvoiceObjectUrl } from "@/lib/invoiceFile";
+import { ClipboardList, FileText, Check, AlertCircle, Send } from "lucide-react";
+
+type InvoicePreviewState = {
+  packageId: number;
+  fileName: string;
+  blobUrl: string | null;
+  mime: string;
+  loading: boolean;
+  error: boolean;
+};
 
 export default function AdminInvoicesPage() {
-  const [rows, setRows] = useState<any[]>([]);
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
-  const [search, setSearch] = useState("");
+  const [invoices, setInvoices] = useState<InvoicePendingRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState<InvoicePreviewState | null>(null);
 
-  async function load() {
+  const [approveId, setApproveId] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const [reviewId, setReviewId] = useState<number | null>(null);
+  const [adminNote, setAdminNote] = useState("");
+
+  const loadInvoices = async () => {
     try {
-      const { data } = await api.get<any[]>("/invoices/pending");
-      setRows(data);
+      const { data } = await api.get<InvoicePendingRow[]>("/admin/invoices/pending");
+      setInvoices(data);
     } catch {
-      toast.error("Failed to load invoices");
+      toast.error("Failed to load pending invoices");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    load();
+    loadInvoices();
   }, []);
 
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (selectedInvoice) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [selectedInvoice]);
+  const closePreview = () => {
+    setPreview((prev) => {
+      if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
+      return null;
+    });
+  };
 
-  async function handleAction(id: number, action: "approve" | "reject") {
-    setBusyId(id);
+  const openInvoicePreview = async (packageId: number, fileName: string) => {
+    setPreview((prev) => {
+      if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
+      return {
+        packageId,
+        fileName: fileName.trim() || "invoice",
+        blobUrl: null,
+        mime: "",
+        loading: true,
+        error: false,
+      };
+    });
     try {
-      await api.patch(`/invoices/${id}/${action}`);
-      toast.success(`Invoice ${action}ed`);
-      setSelectedInvoice(null);
-      await load();
-    } catch (err: unknown) {
-      const d = (err as { response?: { data?: { detail?: string } } })?.response
-        ?.data?.detail;
-      toast.error(typeof d === "string" ? d : "Could not update status");
-    } finally {
-      setBusyId(null);
+      const { url, mime } = await fetchInvoiceObjectUrl(packageId);
+      setPreview((prev) => {
+        if (!prev || prev.packageId !== packageId) {
+          URL.revokeObjectURL(url);
+          return prev;
+        }
+        return { ...prev, blobUrl: url, mime, loading: false, error: false };
+      });
+    } catch {
+      setPreview((prev) =>
+        prev && prev.packageId === packageId
+          ? { ...prev, loading: false, error: true }
+          : prev,
+      );
+      toast.error("Could not load invoice");
     }
-  }
+  };
 
-  const filteredRows = rows.filter(r => 
-    (r.package_title || "").toLowerCase().includes(search.toLowerCase()) || 
-    (r.client_name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const handleApprove = async () => {
+    if (!approveId) return;
+    setProcessing(true);
+    try {
+      await api.patch(`/admin/invoices/${approveId}/approve`);
+      toast.success("Invoice approved successfully");
+      setInvoices((prev) => prev.filter((i) => i.id !== approveId));
+    } catch {
+      toast.error("Failed to approve invoice");
+    } finally {
+      setProcessing(false);
+      setApproveId(null);
+    }
+  };
+
+  const handleNeedsReviewSubmit = async (invoiceId: number) => {
+    if (!adminNote.trim()) {
+      toast.error("Please provide a note explaining what needs review.");
+      return;
+    }
+    try {
+      await api.patch(`/admin/invoices/${invoiceId}/needs-review`, {
+        admin_notes: adminNote,
+      });
+      toast.success("Invoice flagged for review");
+      setInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
+      setReviewId(null);
+      setAdminNote("");
+    } catch {
+      toast.error("Failed to flag invoice");
+    }
+  };
+
+  if (loading) return <LoadingSpinner size="lg" />;
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Invoice Reviews</h1>
-        <p className="page-subtitle">Review and verify invoices uploaded by clients.</p>
-      </motion.div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div>
+        <h1 className="page-title flex items-center gap-2">
+          <ClipboardList className="h-6 w-6 text-[#00C9B1]" /> Pending Invoice Reviews
+        </h1>
+        <p className="page-subtitle">Review client uploaded invoices and approve them for shipment processing.</p>
+      </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-slate-400" />
+      {invoices.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState
+            icon={<Check className="h-8 w-8 text-[#10B981]" />}
+            title="All caught up!"
+            description="There are no invoices pending review right now."
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Search by package or client..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-field pl-10"
-        />
-      </div>
-
-      <div className="space-y-3">
-        {filteredRows.length === 0 ? (
-          <div className="card p-12 flex flex-col items-center justify-center text-center">
-            <FileText className="w-12 h-12 text-slate-200 mb-4" />
-            <p className="text-slate-500">No invoices pending review.</p>
-          </div>
-        ) : (
-          filteredRows.map((r, i) => (
-            <motion.div
-              key={r.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="card p-4 hover:border-primary/30 transition-colors flex flex-col md:flex-row md:items-center gap-4 group"
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <FileText className="w-5 h-5 text-slate-400 group-hover:text-primary" />
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+          {invoices.map((inv) => (
+            <div key={inv.id} className="card overflow-hidden flex flex-col">
+              <div className="p-5 flex-1">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-bold text-slate-900">{inv.package_tracking}</h3>
+                    <p className="text-sm text-slate-500 mt-1 line-clamp-2">{inv.contents_description}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                    Pending
+                  </span>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 leading-none">{r.package_title}</h3>
-                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {r.client_name}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(r.uploaded_at).toLocaleDateString()}
-                    </span>
+
+                <div className="space-y-3 pt-4 border-t border-slate-100">
+                  <div>
+                    <p className="text-xs text-slate-400 font-medium uppercase">Client</p>
+                    <p className="text-sm font-semibold text-slate-700">{inv.client_name}</p>
+                    <p className="text-xs text-slate-500">{inv.client_suite || "No suite"} • {inv.client_email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 font-medium uppercase">Uploaded On</p>
+                    <p className="text-sm text-slate-700">{new Date(inv.uploaded_at).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
-                <PackageStatusBadge status={r.status} />
-                <button 
-                  onClick={() => setSelectedInvoice(r)}
-                  className="btn-ghost flex items-center gap-2"
-                >
-                  Review
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
-
-      {/* Invoice Detail Modal */}
-      <AnimatePresence>
-        {selectedInvoice && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden overscroll-none" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedInvoice(null)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
-              style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
-            >
-              {/* Header - fixed */}
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <h2 className="text-lg font-bold text-slate-900">Review Invoice</h2>
-                <button onClick={() => setSelectedInvoice(null)} className="text-slate-400 hover:text-slate-600">
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Scrollable body */}
-              <div className="p-5 space-y-4 overflow-y-auto flex-1">
-                {/* Info row */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Package</p>
-                    <p className="text-sm text-slate-900 font-medium">{selectedInvoice.package_title}</p>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Client</p>
-                    <p className="text-sm text-slate-900 font-medium">{selectedInvoice.client_name}</p>
-                  </div>
-                </div>
-
-                {/* File info bar */}
-                <div className="rounded-lg border border-slate-200 px-4 py-3 bg-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-900">{selectedInvoice.original_file_name || "Invoice Document"}</p>
-                      <p className="text-[11px] text-slate-400">{new Date(selectedInvoice.uploaded_at).toLocaleString()}</p>
+              <div className="bg-slate-50 p-4 border-t border-slate-200">
+                {reviewId === inv.id ? (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-slate-700">Needs Review Note</label>
+                    <textarea
+                      autoFocus
+                      rows={3}
+                      className="input-field text-sm"
+                      placeholder="Explain what is wrong with the invoice..."
+                      value={adminNote}
+                      onChange={(e) => setAdminNote(e.target.value)}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setReviewId(null);
+                          setAdminNote("");
+                        }}
+                        className="btn-ghost px-3 py-1.5 text-xs"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleNeedsReviewSubmit(inv.id)}
+                        className="btn-primary flex items-center gap-1 bg-[#F59E0B] hover:bg-amber-600 px-3 py-1.5 text-xs"
+                      >
+                        <Send className="w-3 h-3" /> Submit
+                      </button>
                     </div>
                   </div>
-                  <a 
-                    href={`${api.defaults.baseURL}/invoices/${selectedInvoice.id}/file?token=${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-primary hover:underline flex items-center gap-1"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Open in tab
-                  </a>
-                </div>
-
-                {/* Inline Preview - contained */}
-                <div className="h-72 w-full rounded-lg border border-slate-200 bg-slate-100 overflow-hidden">
-                  {selectedInvoice.file_type === "pdf" ? (
-                    <iframe 
-                      src={`${api.defaults.baseURL}/invoices/${selectedInvoice.id}/file?token=${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`}
-                      className="w-full h-full border-none"
-                      title="Invoice Preview"
-                    />
-                  ) : (
-                    <img 
-                      src={`${api.defaults.baseURL}/invoices/${selectedInvoice.id}/file?token=${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`}
-                      alt="Invoice Preview"
-                      className="w-full h-full object-contain p-2"
-                    />
-                  )}
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openInvoicePreview(
+                          inv.package_id,
+                          inv.file_name || "invoice",
+                        )
+                      }
+                      className="btn-ghost w-full flex justify-center items-center gap-2"
+                    >
+                      <FileText className="w-4 h-4" /> View invoice
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setApproveId(inv.id)}
+                        className="flex-1 btn-primary bg-[#10B981] hover:bg-emerald-600 flex justify-center items-center gap-1"
+                      >
+                        <Check className="w-4 h-4" /> Approve
+                      </button>
+                      <button
+                        onClick={() => setReviewId(inv.id)}
+                        className="flex-1 btn-primary bg-[#F59E0B] hover:bg-amber-600 flex justify-center items-center gap-1"
+                      >
+                        <AlertCircle className="w-4 h-4" /> Needs Review
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-              {/* Footer actions - fixed */}
-              <div className="p-5 border-t border-slate-100 flex gap-3 shrink-0">
-                <button
-                  onClick={() => handleAction(selectedInvoice.id, "reject")}
-                  disabled={busyId === selectedInvoice.id}
-                  className="flex-1 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 transition-colors flex items-center justify-center gap-2"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Reject
-                </button>
-                <button
-                  onClick={() => handleAction(selectedInvoice.id, "approve")}
-                  disabled={busyId === selectedInvoice.id}
-                  className="flex-1 btn-primary flex items-center justify-center gap-2 py-2.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Approve
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        isOpen={!!approveId}
+        title="Approve Invoice"
+        message="Are you sure you want to approve this invoice? The package will be marked as Invoice Approved and the client will be able to request shipment."
+        confirmText="Approve Invoice"
+        onConfirm={handleApprove}
+        onCancel={() => setApproveId(null)}
+        isLoading={processing}
+      />
+
+      <InvoicePreviewModal
+        isOpen={preview !== null}
+        onClose={closePreview}
+        fileName={preview?.fileName ?? ""}
+        blobUrl={preview?.blobUrl ?? null}
+        mime={preview?.mime ?? ""}
+        loading={preview?.loading ?? false}
+        error={preview?.error ?? false}
+      />
     </div>
-  );
-}
-
-function ArrowRight(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
   );
 }

@@ -1,50 +1,65 @@
 "use client";
 
-import { PackageStatus } from "@/lib/types";
+import { PackageStatus, ShipProcessingStatus, InvoiceReviewStatus } from "@/lib/types";
 
-const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  pending_invoice: {
-    label: "Pending Invoice",
-    bg: "bg-amber-50",
-    text: "text-amber-700",
+const statusConfig: Record<string, { label: string; className: string }> = {
+  ready_to_send: {
+    label: "Ready to Send",
+    className: "bg-[#3B82F6] text-white",
   },
-  invoice_uploaded: {
-    label: "Invoice Uploaded",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
+  pending_invoice_review: {
+    label: "Pending Invoice Review",
+    className: "bg-[#F59E0B] text-white",
   },
-  approved: {
-    label: "Approved",
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
+  invoice_needs_review: {
+    label: "Needs Review",
+    className: "bg-[#E11D48] text-white",
   },
-  rejected: {
-    label: "Rejected",
-    bg: "bg-rose-50",
-    text: "text-rose-700",
+  invoice_approved: {
+    label: "Invoice Approved",
+    className: "bg-[#10B981] text-white",
   },
-  shipment_requested: {
-    label: "Shipment Requested",
-    bg: "bg-indigo-50",
-    text: "text-indigo-700",
+  ship_requested: {
+    label: "Ship Requested",
+    className: "bg-[#8B5CF6] text-white",
   },
   shipped: {
     label: "Shipped",
-    bg: "bg-slate-100",
-    text: "text-slate-700",
+    className: "bg-[#06B6D4] text-white",
+  },
+  ready_for_pickup: {
+    label: "Ready for Pickup",
+    className: "bg-[#F97316] text-white",
+  },
+  delivered: {
+    label: "Delivered",
+    className: "bg-[#059669] text-white",
+  },
+
+  pending: {
+    label: "Pending",
+    className: "bg-slate-500 text-white",
+  },
+
+  approved: {
+    label: "Approved",
+    className: "bg-[#10B981] text-white",
+  },
+  needs_review: {
+    label: "Needs Review",
+    className: "bg-[#F59E0B] text-white",
   },
 };
 
-export function PackageStatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status }: { status: string }) {
   const config = statusConfig[status] || {
-    label: status,
-    bg: "bg-slate-50",
-    text: "text-slate-600",
+    label: status.replace(/_/g, " "),
+    className: "bg-slate-500 text-white",
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${config.bg} ${config.text} border border-current/10`}
+      className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap shadow-sm ${config.className}`}
     >
       {config.label}
     </span>

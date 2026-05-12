@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       access_token: string;
       token_type: string;
       user: User;
-    }>("/auth/login", { email, password });
+    }>("/auth/login", { email: email.trim(), password });
     setSession(data.access_token, data.user);
     return data.user;
   }, [setSession]);

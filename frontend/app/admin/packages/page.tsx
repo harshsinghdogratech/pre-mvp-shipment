@@ -1,200 +1,172 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import type { PackageRow, User } from "@/lib/types";
-import { PackageStatusBadge } from "@/components/StatusBadge";
-import { Plus, Search, Package, User as UserIcon, Calendar, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import type { PackageOut } from "@/lib/types";
+import { StatusBadge } from "@/components/StatusBadge";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { EmptyState } from "@/components/EmptyState";
+import { Package, Search, ArrowRight, ArrowUpDown } from "lucide-react";
+
+type SortField = "date_received" | "status" | "client_name";
+type SortOrder = "asc" | "desc";
 
 export default function AdminPackagesPage() {
-  const [packages, setPackages] = useState<PackageRow[]>([]);
-  const [clients, setClients] = useState<User[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
+  const router = useRouter();
+  const [packages, setPackages] = useState<PackageOut[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    client_id: "",
-  });
-
-  async function loadData() {
-    try {
-      const [pRes, cRes] = await Promise.all([
-        api.get<PackageRow[]>("/packages"),
-        api.get<User[]>("/users/clients"),
-      ]);
-      setPackages(pRes.data);
-      setClients(cRes.data);
-    } catch {
-      toast.error("Failed to load data");
-    }
-  }
+  const [sortField, setSortField] = useState<SortField>("date_received");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   useEffect(() => {
-    loadData();
+    const fetchPackages = async () => {
+      try {
+        const { data } = await api.get<PackageOut[]>("/admin/packages");
+        setPackages(data);
+      } catch {
+        toast.error("Failed to load packages");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPackages();
   }, []);
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!formData.client_id) return toast.error("Please select a client");
-    try {
-      await api.post("/packages", {
-        ...formData,
-        client_id: parseInt(formData.client_id),
-      });
-      toast.success("Package created successfully");
-      setShowCreate(false);
-      setFormData({ title: "", description: "", client_id: "" });
-      loadData();
-    } catch {
-      toast.error("Failed to create package");
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
     }
-  }
+  };
 
-  const filteredPackages = packages.filter(p => 
-    (p.title || "").toLowerCase().includes(search.toLowerCase()) || 
-    (p.client_name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredAndSortedPackages = packages
+    .filter((p) => {
+      const q = search.toLowerCase();
+      return (
+        p.tracking_number.toLowerCase().includes(q) ||
+        p.contents_description.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      if (sortField === "date_received") {
+        aVal = new Date(a.date_received).getTime();
+        bVal = new Date(b.date_received).getTime();
+      }
+
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  if (loading) return <LoadingSpinner size="lg" />;
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="page-title">Packages</h1>
-          <p className="page-subtitle">Manage all incoming and active shipments.</p>
-        </motion.div>
-        
-        <motion.button
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={() => setShowCreate(!showCreate)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create Package
-        </motion.button>
-      </div>
-
-      {showCreate && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card p-6 bg-white"
-        >
-          <h2 className="text-lg font-bold text-slate-900 mb-4">New Package</h2>
-          <form onSubmit={onCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Package Title</label>
-              <input
-                required
-                className="input-field"
-                placeholder="e.g. Laptop Electronics"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Assign Client</label>
-              <select
-                required
-                className="input-field"
-                value={formData.client_id}
-                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-              >
-                <option value="">Select a client</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.email})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Description</label>
-              <textarea
-                className="input-field min-h-[100px]"
-                placeholder="Items list or internal notes..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowCreate(false)}
-                className="btn-ghost"
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn-primary">
-                Create Package
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      )}
-
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-slate-400" />
+        <div>
+          <h1 className="page-title">All Packages</h1>
+          <p className="page-subtitle">View and manage all packages in the system.</p>
         </div>
-        <input
-          type="text"
-          placeholder="Search by title or client name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-field pl-10"
-        />
       </div>
 
-      {/* Table-like List */}
-      <div className="space-y-3">
-        {filteredPackages.length === 0 ? (
-          <div className="card p-12 flex flex-col items-center justify-center text-center">
-            <Package className="w-12 h-12 text-slate-200 mb-4" />
-            <p className="text-slate-500">No packages found matching your search.</p>
+      <div className="card p-0 overflow-hidden bg-white">
+        <div className="p-4 border-b border-slate-200">
+          <div className="relative max-w-md">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by tracking number or contents..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input-field !pl-11"
+            />
           </div>
-        ) : (
-          filteredPackages.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="card p-4 hover:border-primary/30 transition-colors flex flex-col md:flex-row md:items-center gap-4 group"
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <Package className="w-5 h-5 text-slate-400 group-hover:text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 leading-none">{p.title}</h3>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <UserIcon className="w-3 h-3" />
-                      {p.client_name}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(p.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
+        </div>
 
-              <div className="flex items-center gap-6">
-                <PackageStatusBadge status={p.status} />
-                <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          ))
-        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                <th className="p-4">Tracking Number</th>
+                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort("client_name")}>
+                  <div className="flex items-center gap-1">
+                    Client <ArrowUpDown className="h-3 w-3" />
+                  </div>
+                </th>
+                <th className="p-4">Contents</th>
+                <th className="p-4">Weight</th>
+                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort("status")}>
+                  <div className="flex items-center gap-1">
+                    Status <ArrowUpDown className="h-3 w-3" />
+                  </div>
+                </th>
+                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort("date_received")}>
+                  <div className="flex items-center gap-1">
+                    Date Received <ArrowUpDown className="h-3 w-3" />
+                  </div>
+                </th>
+                <th className="p-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredAndSortedPackages.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8">
+                    <EmptyState
+                      icon={<Package className="h-8 w-8" />}
+                      title="No packages found"
+                      description={search ? "Try adjusting your search query." : "No packages have been added yet."}
+                    />
+                  </td>
+                </tr>
+              ) : (
+                filteredAndSortedPackages.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="p-4 text-sm font-medium text-slate-900">
+                      {p.tracking_number}
+                    </td>
+                    <td className="p-4 text-sm text-slate-600">
+                      {p.client_name}
+                      <span className="block text-xs text-slate-600 mt-0.5">
+                        Suite: {p.client_suite ?? "Not assigned"}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-slate-600 max-w-[200px] truncate">
+                      {p.contents_description}
+                    </td>
+                    <td className="p-4 text-sm text-slate-600">
+                      {p.weight} kg
+                    </td>
+                    <td className="p-4">
+                      <StatusBadge status={p.status} />
+                    </td>
+                    <td className="p-4 text-sm text-slate-600">
+                      {p.date_received}
+                    </td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => router.push(`/admin/packages/${p.id}`)}
+                        className="btn-ghost flex items-center gap-2 ml-auto"
+                      >
+                        View <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

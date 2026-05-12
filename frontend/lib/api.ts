@@ -22,6 +22,10 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401 && typeof window !== "undefined") {
+      const url = String(err.config?.url ?? "");
+      if (url.includes("/auth/login")) {
+        return Promise.reject(err);
+      }
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       if (!window.location.pathname.startsWith("/login")) {

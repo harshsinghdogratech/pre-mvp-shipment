@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expires_minutes: int = 480
     cors_origins: str = "http://localhost:3000"
+    sync_demo_login: bool = True
 
     @property
     def cors_origin_list(self) -> list[str]:

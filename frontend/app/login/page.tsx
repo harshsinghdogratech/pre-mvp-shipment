@@ -16,7 +16,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (loading) return;
     if (token && user) {
-      router.replace(user.role === "admin" ? "/admin" : "/client");
+      router.replace(user.role === "admin" ? "/admin/dashboard" : "/client/dashboard");
     }
   }, [loading, token, user, router]);
 
@@ -28,11 +28,18 @@ export default function LoginPage() {
     }
     setBusy(true);
     try {
-      const u = await login(email, password);
+      const u = await login(email.trim(), password);
       toast.success("Signed in successfully");
-      router.replace(u.role === "admin" ? "/admin" : "/client");
-    } catch {
-      toast.error("Invalid credentials");
+      router.replace(u.role === "admin" ? "/admin/dashboard" : "/client/dashboard");
+    } catch (err: unknown) {
+      const status = err && typeof err === "object" && "response" in err
+        ? (err as { response?: { status?: number } }).response?.status
+        : undefined;
+      if (status === 422) {
+        toast.error("Invalid email or password format");
+      } else {
+        toast.error("Invalid credentials");
+      }
     } finally {
       setBusy(false);
     }
@@ -41,60 +48,54 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#00C9B1]" />
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen">
-      {/* Left - Dark Navy Brand Panel */}
-      <div className="hidden lg:flex w-[45%] flex-col justify-between bg-sidebar px-12 py-10">
-        {/* Logo */}
+      <div className="hidden lg:flex w-[45%] flex-col justify-between bg-[#0A1628] px-12 py-10">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00C9B1] shadow-lg shadow-[#00C9B1]/20">
             <Ship className="h-6 w-6 text-white" />
           </div>
-          <span className="text-xl font-bold text-white">ShipFlow</span>
+          <span className="text-xl font-bold text-white">Ship2Aruba</span>
         </div>
 
-        {/* Center content */}
         <div>
           <h1 className="text-4xl font-bold text-white leading-tight">
             Ship to Aruba<br />
-            <span className="text-primary">with Confidence</span>
+            <span className="text-[#00C9B1]">with Confidence</span>
           </h1>
           <p className="mt-4 text-slate-400 text-base leading-relaxed max-w-sm">
             Fast, reliable & secure shipping solutions for your business. Track your packages in real-time.
           </p>
 
-          {/* Stats row */}
           <div className="mt-10 grid grid-cols-3 gap-4">
             {[
               { label: "Packages Shipped", value: "12K+" },
               { label: "Happy Clients", value: "340+" },
               { label: "Uptime", value: "99.9%" },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl bg-sidebar-hover p-4">
-                <p className="text-2xl font-bold text-primary">{s.value}</p>
+              <div key={s.label} className="rounded-xl bg-[#112240] p-4 border border-white/5">
+                <p className="text-2xl font-bold text-[#00C9B1]">{s.value}</p>
                 <p className="text-xs text-slate-400 mt-1">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-xs text-slate-600">© 2026 ShipFlow. All rights reserved.</p>
+        <p className="text-xs text-slate-500">© 2026 Ship2Aruba. All rights reserved.</p>
       </div>
 
-      {/* Right - Login Form */}
-      <div className="flex flex-1 items-center justify-center bg-background px-6 py-12">
+      <div className="flex flex-1 items-center justify-center bg-[#F8FAFC] px-6 py-12">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 mb-8">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00C9B1]">
               <Ship className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-slate-900">ShipFlow</span>
+            <span className="text-lg font-bold text-slate-900">Ship2Aruba</span>
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
@@ -142,27 +143,29 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
               Demo Accounts
+            </p>
+            <p className="text-xs text-slate-600 mb-3">
+              Password for both: <span className="font-mono font-semibold">password123</span>
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => { setEmail("admin@test.com"); setPassword("password"); }}
-                className="flex flex-col items-start rounded-lg border border-slate-200 bg-slate-50 hover:bg-primary/5 hover:border-primary/30 px-3 py-2.5 transition-colors text-left"
+                onClick={() => { setEmail("admin@ship2aruba.com"); setPassword("password123"); }}
+                className="flex flex-col items-start rounded-lg border border-slate-200 bg-slate-50 hover:bg-[#00C9B1]/5 hover:border-[#00C9B1]/30 px-3 py-2.5 transition-colors text-left"
               >
                 <span className="text-xs font-bold text-slate-800">Admin</span>
-                <span className="text-[10px] text-slate-400">admin@test.com</span>
+                <span className="text-[10px] text-slate-400">admin@ship2aruba.com</span>
               </button>
               <button
                 type="button"
-                onClick={() => { setEmail("client@test.com"); setPassword("password"); }}
-                className="flex flex-col items-start rounded-lg border border-slate-200 bg-slate-50 hover:bg-primary/5 hover:border-primary/30 px-3 py-2.5 transition-colors text-left"
+                onClick={() => { setEmail("client@ship2aruba.com"); setPassword("password123"); }}
+                className="flex flex-col items-start rounded-lg border border-slate-200 bg-slate-50 hover:bg-[#00C9B1]/5 hover:border-[#00C9B1]/30 px-3 py-2.5 transition-colors text-left"
               >
                 <span className="text-xs font-bold text-slate-800">Client</span>
-                <span className="text-[10px] text-slate-400">client@test.com</span>
+                <span className="text-[10px] text-slate-400">client@ship2aruba.com</span>
               </button>
             </div>
           </div>
