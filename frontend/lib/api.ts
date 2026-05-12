@@ -1,16 +1,29 @@
 import axios from "axios";
 
-const baseURL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
+function normalizeApiRoot(u: string): string {
+  const t = u.trim().replace(/\/+$/, "");
+  if (t.endsWith("/api")) return t;
+  return `${t}/api`;
+}
+
+function serverSideBaseURL(): string {
+  const pub = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (pub) return normalizeApiRoot(pub);
+  const proxy = process.env.BACKEND_PROXY_URL?.trim();
+  if (proxy) return normalizeApiRoot(proxy);
+  return "http://127.0.0.1:8000/api";
+}
+
+const isBrowser = typeof window !== "undefined";
 
 export const api = axios.create({
-  baseURL,
+  baseURL: isBrowser ? "/api" : serverSideBaseURL(),
   headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token")?.trim();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
