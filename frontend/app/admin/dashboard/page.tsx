@@ -29,6 +29,7 @@ export default function AdminDashboardPage() {
 
   const statusCards = [
     { label: "Ready to Send", value: stats?.ready_to_send ?? 0, icon: Package, color: "text-[#3B82F6]", bg: "bg-[#3B82F6]/10" },
+    { label: "Needs Review", value: stats?.needs_review ?? 0, icon: AlertTriangle, color: "text-[#EF4444]", bg: "bg-[#EF4444]/10" },
     { label: "Pending Invoice Review", value: stats?.pending_invoice_review ?? 0, icon: ClipboardList, color: "text-[#F59E0B]", bg: "bg-[#F59E0B]/10" },
     { label: "Ship Requested", value: stats?.ship_requested ?? 0, icon: Truck, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
     { label: "Shipped", value: stats?.shipped ?? 0, icon: Ship, color: "text-[#06B6D4]", bg: "bg-[#06B6D4]/10" },

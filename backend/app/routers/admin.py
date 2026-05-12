@@ -159,6 +159,20 @@ def admin_dashboard(
             or 0
         )
 
+    def _count_needs_review() -> int:
+        return int(
+            db.scalar(
+                select(func.count())
+                .select_from(Package)
+                .join(Invoice, Invoice.package_id == Package.id)
+                .where(
+                    Package.status == PackageStatus.ready_to_send,
+                    Invoice.review_status == InvoiceReviewStatus.needs_review,
+                )
+            )
+            or 0
+        )
+
     total_clients = int(
         db.scalar(
             select(func.count())
@@ -175,8 +189,12 @@ def admin_dashboard(
         )
         or 0
     )
+    needs_rev = _count_needs_review()
+    raw_ready = _count_status(PackageStatus.ready_to_send)
+
     return AdminDashboard(
-        ready_to_send=_count_status(PackageStatus.ready_to_send),
+        ready_to_send=raw_ready - needs_rev,
+        needs_review=needs_rev,
         pending_invoice_review=_count_status(
             PackageStatus.pending_invoice_review
         ),

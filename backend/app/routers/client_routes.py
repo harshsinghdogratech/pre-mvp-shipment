@@ -159,8 +159,27 @@ def client_dashboard(
             or 0
         )
 
+    def _c_needs_review() -> int:
+        return int(
+            db.scalar(
+                select(func.count())
+                .select_from(Package)
+                .join(Invoice, Invoice.package_id == Package.id)
+                .where(
+                    Package.client_id == client.id,
+                    Package.status == PackageStatus.ready_to_send,
+                    Invoice.review_status == InvoiceReviewStatus.needs_review,
+                )
+            )
+            or 0
+        )
+
+    needs_rev = _c_needs_review()
+    raw_ready = _c(PackageStatus.ready_to_send)
+
     return ClientDashboard(
-        ready_to_send=_c(PackageStatus.ready_to_send),
+        ready_to_send=raw_ready - needs_rev,
+        needs_review=needs_rev,
         pending_invoice_review=_c(
             PackageStatus.pending_invoice_review
         ),

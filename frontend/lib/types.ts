@@ -105,6 +105,7 @@ export interface ShipRequestOut {
 
 export interface AdminDashboard {
   ready_to_send: number;
+  needs_review: number;
   pending_invoice_review: number;
   invoice_approved: number;
   ship_requested: number;
@@ -117,6 +118,7 @@ export interface AdminDashboard {
 
 export interface ClientDashboard {
   ready_to_send: number;
+  needs_review: number;
   pending_invoice_review: number;
   invoice_approved: number;
   ship_requested: number;

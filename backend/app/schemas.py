@@ -182,6 +182,7 @@ class ShipRequestOut(BaseModel):
 
 class AdminDashboard(BaseModel):
     ready_to_send: int = 0
+    needs_review: int = 0
     pending_invoice_review: int = 0
     invoice_approved: int = 0
     ship_requested: int = 0
@@ -194,6 +195,7 @@ class AdminDashboard(BaseModel):
 
 class ClientDashboard(BaseModel):
     ready_to_send: int = 0
+    needs_review: int = 0
     pending_invoice_review: int = 0
     invoice_approved: int = 0
     ship_requested: int = 0
