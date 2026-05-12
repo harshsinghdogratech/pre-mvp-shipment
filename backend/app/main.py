@@ -18,13 +18,24 @@ from app.seed import (
 def create_app() -> FastAPI:
     app = FastAPI(title="Ship2Aruba API", version="0.2.0")
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origin_list,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    _rx = settings.cors_railway_origin_regex
+    if _rx:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origin_list,
+            allow_origin_regex=_rx,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origin_list,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(

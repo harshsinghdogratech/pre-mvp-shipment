@@ -180,7 +180,7 @@ export function AppShell({
 
         <main
           data-app-shell-main
-          className="min-h-0 flex-1 overflow-y-auto p-5 md:p-8"
+          className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-2 md:px-8 md:pb-8 md:pt-3"
         >
           {children}
         </main>

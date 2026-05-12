@@ -12,11 +12,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expires_minutes: int = 480
     cors_origins: str = "http://localhost:3000"
+    cors_allow_railway_regex: bool = True
     sync_demo_login: bool = True
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def cors_railway_origin_regex(self) -> str | None:
+        if not self.cors_allow_railway_regex:
+            return None
+        return r"^https://[A-Za-z0-9][A-Za-z0-9.-]*\.up\.railway\.app$"
 
 
 settings = Settings()
