@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_admin
+from app.enum_coerce import invoice_review_enum, package_status_enum
 from app.exceptions import AppError
 from app.models import (
     Invoice,
@@ -68,7 +69,7 @@ def _invoice_info(inv: Invoice | None) -> InvoiceInfo | None:
         return None
     return InvoiceInfo(
         id=inv.id,
-        review_status=inv.review_status.value,
+        review_status=invoice_review_enum(inv.review_status.value),
         admin_notes=inv.admin_notes,
         file_name=inv.file_name,
         uploaded_at=inv.uploaded_at,
@@ -90,7 +91,7 @@ def _pkg_to_out(
         length=p.length,
         weight=p.weight,
         contents_description=p.contents_description,
-        status=PackageStatusEnum(p.status.value),
+        status=package_status_enum(p.status.value),
         client_id=p.client_id,
         date_received=p.date_received,
         created_at=p.created_at,
@@ -126,7 +127,7 @@ def _sr_to_out(
                     pkg.contents_description if pkg else None
                 ),
                 status=(
-                    PackageStatusEnum(pkg.status.value) if pkg else None
+                    package_status_enum(pkg.status.value) if pkg else None
                 ),
             )
         )

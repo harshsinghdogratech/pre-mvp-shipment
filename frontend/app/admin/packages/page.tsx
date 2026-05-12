@@ -69,7 +69,7 @@ export default function AdminPackagesPage() {
   if (loading) return <LoadingSpinner size="lg" />;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">All Packages</h1>
@@ -77,9 +77,9 @@ export default function AdminPackagesPage() {
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden bg-white">
-        <div className="p-4 border-b border-slate-200">
-          <div className="relative max-w-md">
+      <div className="card min-w-0 overflow-hidden bg-white p-0">
+        <div className="border-b border-slate-200 p-4">
+          <div className="relative max-w-md min-w-0">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
             </div>
@@ -93,29 +93,29 @@ export default function AdminPackagesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto overscroll-x-contain">
+          <table className="w-full min-w-0 table-fixed border-collapse text-left md:table-auto md:min-w-[720px]">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="p-4">Tracking Number</th>
-                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort("client_name")}>
+              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <th className="w-[18%] p-3 sm:p-4">Tracking Number</th>
+                <th className="w-[16%] p-3 sm:p-4 md:cursor-pointer md:hover:bg-slate-100 md:transition-colors" onClick={() => handleSort("client_name")}>
                   <div className="flex items-center gap-1">
-                    Client <ArrowUpDown className="h-3 w-3" />
+                    Client <ArrowUpDown className="h-3 w-3 shrink-0" />
                   </div>
                 </th>
-                <th className="p-4">Contents</th>
-                <th className="p-4">Weight</th>
-                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort("status")}>
+                <th className="min-w-0 p-3 sm:p-4">Contents</th>
+                <th className="w-[10%] p-3 sm:p-4">Weight</th>
+                <th className="w-[14%] p-3 sm:p-4 md:cursor-pointer md:hover:bg-slate-100 md:transition-colors" onClick={() => handleSort("status")}>
                   <div className="flex items-center gap-1">
-                    Status <ArrowUpDown className="h-3 w-3" />
+                    Status <ArrowUpDown className="h-3 w-3 shrink-0" />
                   </div>
                 </th>
-                <th className="p-4 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort("date_received")}>
+                <th className="w-[14%] p-3 sm:p-4 md:cursor-pointer md:hover:bg-slate-100 md:transition-colors" onClick={() => handleSort("date_received")}>
                   <div className="flex items-center gap-1">
-                    Date Received <ArrowUpDown className="h-3 w-3" />
+                    Date Received <ArrowUpDown className="h-3 w-3 shrink-0" />
                   </div>
                 </th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="w-[10%] p-3 text-right sm:p-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -132,33 +132,34 @@ export default function AdminPackagesPage() {
               ) : (
                 filteredAndSortedPackages.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="p-4 text-sm font-medium text-slate-900">
-                      {p.tracking_number}
+                    <td className="p-3 text-sm font-medium text-slate-900 sm:p-4">
+                      <span className="line-clamp-2 break-words">{p.tracking_number}</span>
                     </td>
-                    <td className="p-4 text-sm text-slate-600">
-                      {p.client_name}
-                      <span className="block text-xs text-slate-600 mt-0.5">
+                    <td className="p-3 text-sm text-slate-600 sm:p-4">
+                      <span className="line-clamp-2 break-words">{p.client_name}</span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-600">
                         Suite: {p.client_suite ?? "Not assigned"}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-slate-600 max-w-[200px] truncate">
-                      {p.contents_description}
+                    <td className="min-w-0 p-3 text-sm text-slate-600 sm:p-4">
+                      <span className="block truncate">{p.contents_description}</span>
                     </td>
-                    <td className="p-4 text-sm text-slate-600">
+                    <td className="p-3 text-sm text-slate-600 sm:p-4">
                       {p.weight} kg
                     </td>
-                    <td className="p-4">
+                    <td className="p-3 sm:p-4">
                       <StatusBadge status={p.status} />
                     </td>
-                    <td className="p-4 text-sm text-slate-600">
+                    <td className="p-3 text-sm text-slate-600 sm:p-4">
                       {p.date_received}
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-3 text-right sm:p-4">
                       <button
+                        type="button"
                         onClick={() => router.push(`/admin/packages/${p.id}`)}
-                        className="btn-ghost flex items-center gap-2 ml-auto"
+                        className="btn-ghost ml-auto inline-flex max-w-full shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
                       >
-                        View <ArrowRight className="h-4 w-4" />
+                        View <ArrowRight className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                       </button>
                     </td>
                   </tr>

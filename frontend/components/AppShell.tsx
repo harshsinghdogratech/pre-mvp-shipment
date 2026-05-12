@@ -62,7 +62,7 @@ export function AppShell({
     "Dashboard";
 
   return (
-    <div className="flex min-h-screen bg-background text-slate-800">
+    <div className="flex min-h-screen min-w-0 w-full overflow-x-hidden bg-background text-slate-800">
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar transition-transform lg:static lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
@@ -130,7 +130,7 @@ export function AppShell({
         />
       )}
 
-      <div className="flex min-h-screen flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <header className="sticky top-0 z-20 flex h-14 w-full shrink-0 items-center border-b border-slate-200 bg-white px-4 shadow-sm sm:h-16 sm:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
@@ -180,7 +180,7 @@ export function AppShell({
 
         <main
           data-app-shell-main
-          className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-2 md:px-8 md:pb-8 md:pt-3"
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-6 pt-1 md:px-8 md:pb-8 md:pt-3"
         >
           {children}
         </main>
