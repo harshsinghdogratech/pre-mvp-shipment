@@ -45,7 +45,15 @@ export default function ClientPackageDetailPage() {
         </button>
         <div>
           <h1 className="page-title flex items-center gap-3">
-            Package Details <StatusBadge status={pkg.status} />
+            Package Details{" "}
+            <StatusBadge
+              status={
+                pkg.status === "ready_to_send" &&
+                pkg.invoice?.review_status === "needs_review"
+                  ? "needs_review"
+                  : pkg.status
+              }
+            />
           </h1>
           <p className="page-subtitle">Tracking: {pkg.tracking_number}</p>
         </div>
@@ -98,7 +106,14 @@ export default function ClientPackageDetailPage() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Status</p>
-              <StatusBadge status={pkg.status} />
+              <StatusBadge
+                status={
+                  pkg.status === "ready_to_send" &&
+                  pkg.invoice?.review_status === "needs_review"
+                    ? "needs_review"
+                    : pkg.status
+                }
+              />
             </div>
           </div>
         </div>

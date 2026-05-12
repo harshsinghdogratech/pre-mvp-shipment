@@ -21,23 +21,16 @@ Base = declarative_base()
 
 
 def ensure_schema_compat() -> None:
-    """Detect outdated schema and rebuild if needed.
 
-    If critical columns (e.g. packages.tracking_number) are missing
-    we know the schema is fundamentally stale — drop everything and
-    let create_all() rebuild from the current models.
-    """
     insp = inspect(engine)
 
     needs_rebuild = False
 
-    # Check packages table for critical columns
     if insp.has_table("packages"):
         pkg_cols = {c["name"] for c in insp.get_columns("packages")}
         if "tracking_number" not in pkg_cols:
             needs_rebuild = True
 
-    # Check invoices table for critical columns
     if insp.has_table("invoices"):
         inv_cols = {c["name"] for c in insp.get_columns("invoices")}
         if "review_status" not in inv_cols:
@@ -48,7 +41,6 @@ def ensure_schema_compat() -> None:
         Base.metadata.create_all(bind=engine)
         return
 
-    # --- Fine-grained column-level migrations (schema is compatible) ---
 
     if insp.has_table("users"):
         user_cols = {c["name"] for c in insp.get_columns("users")}

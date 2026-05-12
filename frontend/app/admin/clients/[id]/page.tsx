@@ -112,7 +112,14 @@ export default function AdminClientDetailPage() {
                       {p.date_received}
                     </td>
                     <td className="p-4">
-                      <StatusBadge status={p.status} />
+                      <StatusBadge
+                        status={
+                          p.status === "ready_to_send" &&
+                          p.invoice?.review_status === "needs_review"
+                            ? "needs_review"
+                            : p.status
+                        }
+                      />
                     </td>
                     <td className="p-4 text-right">
                       <button

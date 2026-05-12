@@ -43,7 +43,15 @@ export default function AdminPackageDetailPage() {
         </button>
         <div>
           <h1 className="page-title flex items-center gap-3">
-            Package Details <StatusBadge status={pkg.status} />
+            Package Details{" "}
+            <StatusBadge
+              status={
+                pkg.status === "ready_to_send" &&
+                pkg.invoice?.review_status === "needs_review"
+                  ? "needs_review"
+                  : pkg.status
+              }
+            />
           </h1>
           <p className="page-subtitle">Tracking: {pkg.tracking_number}</p>
         </div>

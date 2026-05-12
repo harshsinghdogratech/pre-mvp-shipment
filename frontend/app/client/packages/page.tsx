@@ -56,7 +56,14 @@ export default function ClientPackagesPage() {
                 <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-[#00C9B1]/10 transition-colors">
                   <Package className="w-5 h-5 text-slate-400 group-hover:text-[#00C9B1]" />
                 </div>
-                <StatusBadge status={p.status} />
+                <StatusBadge
+                  status={
+                    p.status === "ready_to_send" &&
+                    p.invoice?.review_status === "needs_review"
+                      ? "needs_review"
+                      : p.status
+                  }
+                />
               </div>
 
               <h3 className="font-bold text-slate-900 text-sm line-clamp-2 mb-2">

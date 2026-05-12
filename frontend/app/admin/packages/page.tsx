@@ -148,7 +148,14 @@ export default function AdminPackagesPage() {
                       {p.weight} kg
                     </td>
                     <td className="p-3 sm:p-4">
-                      <StatusBadge status={p.status} />
+                      <StatusBadge
+                        status={
+                          p.status === "ready_to_send" &&
+                          p.invoice?.review_status === "needs_review"
+                            ? "needs_review"
+                            : p.status
+                        }
+                      />
                     </td>
                     <td className="p-3 text-sm text-slate-600 sm:p-4">
                       {p.date_received}
