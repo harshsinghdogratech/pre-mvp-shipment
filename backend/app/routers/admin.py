@@ -180,9 +180,6 @@ def admin_dashboard(
         pending_invoice_review=_count_status(
             PackageStatus.pending_invoice_review
         ),
-        invoice_needs_review=_count_status(
-            PackageStatus.invoice_needs_review
-        ),
         invoice_approved=_count_status(PackageStatus.invoice_approved),
         ship_requested=_count_status(PackageStatus.ship_requested),
         shipped=_count_status(PackageStatus.shipped),
@@ -417,7 +414,7 @@ def needs_review_invoice(
     inv.reviewed_by = admin.id
 
     old = pkg.status.value
-    pkg.status = PackageStatus.invoice_needs_review
+    pkg.status = PackageStatus.ready_to_send
     pkg.updated_at = now
     _record_transition(db, pkg, old, pkg.status.value, admin.id)
 

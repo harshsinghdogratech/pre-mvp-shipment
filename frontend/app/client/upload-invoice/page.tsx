@@ -20,8 +20,7 @@ export default function ClientUploadInvoicePage() {
     try {
       const { data } = await api.get<PackageOut[]>("/client/packages");
       const eligible = data.filter(
-        (p) =>
-          p.status === "ready_to_send" || p.status === "invoice_needs_review",
+        (p) => p.status === "ready_to_send",
       );
       setPackages(eligible);
     } catch {

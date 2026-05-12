@@ -3,7 +3,6 @@ export type Role = "admin" | "client";
 export type PackageStatus =
   | "ready_to_send"
   | "pending_invoice_review"
-  | "invoice_needs_review"
   | "invoice_approved"
   | "ship_requested"
   | "shipped"
@@ -107,7 +106,6 @@ export interface ShipRequestOut {
 export interface AdminDashboard {
   ready_to_send: number;
   pending_invoice_review: number;
-  invoice_needs_review: number;
   invoice_approved: number;
   ship_requested: number;
   shipped: number;
@@ -120,7 +118,6 @@ export interface AdminDashboard {
 export interface ClientDashboard {
   ready_to_send: number;
   pending_invoice_review: number;
-  invoice_needs_review: number;
   invoice_approved: number;
   ship_requested: number;
   shipped: number;

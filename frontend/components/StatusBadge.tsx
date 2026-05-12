@@ -11,10 +11,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     label: "Pending Invoice Review",
     className: "bg-[#F59E0B] text-white",
   },
-  invoice_needs_review: {
-    label: "Needs Review",
-    className: "bg-[#E11D48] text-white",
-  },
   invoice_approved: {
     label: "Invoice Approved",
     className: "bg-[#10B981] text-white",

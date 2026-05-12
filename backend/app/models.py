@@ -26,7 +26,6 @@ class UserRole(str, enum.Enum):
 class PackageStatus(str, enum.Enum):
     ready_to_send = "ready_to_send"
     pending_invoice_review = "pending_invoice_review"
-    invoice_needs_review = "invoice_needs_review"
     invoice_approved = "invoice_approved"
     ship_requested = "ship_requested"
     shipped = "shipped"
@@ -49,10 +48,7 @@ VALID_TRANSITIONS: dict[PackageStatus, list[PackageStatus]] = {
     PackageStatus.ready_to_send: [PackageStatus.pending_invoice_review],
     PackageStatus.pending_invoice_review: [
         PackageStatus.invoice_approved,
-        PackageStatus.invoice_needs_review,
-    ],
-    PackageStatus.invoice_needs_review: [
-        PackageStatus.pending_invoice_review,
+        PackageStatus.ready_to_send,
     ],
     PackageStatus.invoice_approved: [PackageStatus.ship_requested],
     PackageStatus.ship_requested: [PackageStatus.shipped],

@@ -164,7 +164,6 @@ def client_dashboard(
         pending_invoice_review=_c(
             PackageStatus.pending_invoice_review
         ),
-        invoice_needs_review=_c(PackageStatus.invoice_needs_review),
         invoice_approved=_c(PackageStatus.invoice_approved),
         ship_requested=_c(PackageStatus.ship_requested),
         shipped=_c(PackageStatus.shipped),
@@ -214,14 +213,11 @@ async def upload_invoice(
         raise AppError(404, "Package not found", "NOT_FOUND")
     if pkg.client_id != client.id:
         raise AppError(403, "Forbidden", "FORBIDDEN")
-    if pkg.status not in (
-        PackageStatus.ready_to_send,
-        PackageStatus.invoice_needs_review,
-    ):
+    if pkg.status != PackageStatus.ready_to_send:
         raise AppError(
             409,
             "Invoice upload only allowed when package status is "
-            "'ready_to_send' or 'invoice_needs_review'",
+            "'ready_to_send'",
             "INVALID_STATUS",
         )
 

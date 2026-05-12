@@ -16,7 +16,6 @@ import {
 const STATUS_ICONS: Record<string, { icon: typeof Package; color: string; bg: string }> = {
   ready_to_send:          { icon: Package,     color: "text-[#3B82F6]", bg: "bg-[#3B82F6]/10" },
   pending_invoice_review: { icon: Package,     color: "text-[#F59E0B]", bg: "bg-[#F59E0B]/10" },
-  invoice_needs_review:   { icon: Package,     color: "text-[#E11D48]", bg: "bg-[#E11D48]/10" },
   invoice_approved:       { icon: Package,     color: "text-[#10B981]", bg: "bg-[#10B981]/10" },
   ship_requested:         { icon: Truck,       color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
   shipped:                { icon: Truck,       color: "text-[#06B6D4]", bg: "bg-[#06B6D4]/10" },

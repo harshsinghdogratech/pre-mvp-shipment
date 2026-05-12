@@ -21,9 +21,35 @@ Base = declarative_base()
 
 
 def ensure_schema_compat() -> None:
+    """Detect outdated schema and rebuild if needed.
+
+    If critical columns (e.g. packages.tracking_number) are missing
+    we know the schema is fundamentally stale — drop everything and
+    let create_all() rebuild from the current models.
+    """
     insp = inspect(engine)
 
-    # --- users.suite_number migration ---
+    needs_rebuild = False
+
+    # Check packages table for critical columns
+    if insp.has_table("packages"):
+        pkg_cols = {c["name"] for c in insp.get_columns("packages")}
+        if "tracking_number" not in pkg_cols:
+            needs_rebuild = True
+
+    # Check invoices table for critical columns
+    if insp.has_table("invoices"):
+        inv_cols = {c["name"] for c in insp.get_columns("invoices")}
+        if "review_status" not in inv_cols:
+            needs_rebuild = True
+
+    if needs_rebuild:
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        return
+
+    # --- Fine-grained column-level migrations (schema is compatible) ---
+
     if insp.has_table("users"):
         user_cols = {c["name"] for c in insp.get_columns("users")}
         if "suite_number" not in user_cols:
@@ -40,41 +66,6 @@ def ensure_schema_compat() -> None:
                         "ix_users_suite_number "
                         "ON users (suite_number) "
                         "WHERE suite_number IS NOT NULL"
-                    )
-                )
-
-    # --- invoices columns migration ---
-    if insp.has_table("invoices"):
-        inv_cols = {c["name"] for c in insp.get_columns("invoices")}
-        with engine.begin() as conn:
-            if "review_status" not in inv_cols:
-                conn.execute(
-                    text(
-                        "ALTER TABLE invoices "
-                        "ADD COLUMN review_status VARCHAR(32) "
-                        "NOT NULL DEFAULT 'pending'"
-                    )
-                )
-            if "admin_notes" not in inv_cols:
-                conn.execute(
-                    text(
-                        "ALTER TABLE invoices "
-                        "ADD COLUMN admin_notes TEXT"
-                    )
-                )
-            if "reviewed_at" not in inv_cols:
-                conn.execute(
-                    text(
-                        "ALTER TABLE invoices "
-                        "ADD COLUMN reviewed_at TIMESTAMPTZ"
-                    )
-                )
-            if "reviewed_by" not in inv_cols:
-                conn.execute(
-                    text(
-                        "ALTER TABLE invoices "
-                        "ADD COLUMN reviewed_by INTEGER "
-                        "REFERENCES users(id)"
                     )
                 )
 

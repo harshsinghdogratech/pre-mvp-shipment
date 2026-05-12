@@ -2,6 +2,7 @@ from app.schemas import InvoiceReviewStatusEnum, PackageStatusEnum
 
 _LEGACY_PACKAGE_STATUS: dict[str, PackageStatusEnum] = {
     "pending_invoice": PackageStatusEnum.pending_invoice_review,
+    "invoice_needs_review": PackageStatusEnum.ready_to_send,
 }
 
 

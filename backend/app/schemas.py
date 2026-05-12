@@ -12,7 +12,6 @@ class RoleEnum(str, Enum):
 class PackageStatusEnum(str, Enum):
     ready_to_send = "ready_to_send"
     pending_invoice_review = "pending_invoice_review"
-    invoice_needs_review = "invoice_needs_review"
     invoice_approved = "invoice_approved"
     ship_requested = "ship_requested"
     shipped = "shipped"
@@ -184,7 +183,6 @@ class ShipRequestOut(BaseModel):
 class AdminDashboard(BaseModel):
     ready_to_send: int = 0
     pending_invoice_review: int = 0
-    invoice_needs_review: int = 0
     invoice_approved: int = 0
     ship_requested: int = 0
     shipped: int = 0
@@ -197,7 +195,6 @@ class AdminDashboard(BaseModel):
 class ClientDashboard(BaseModel):
     ready_to_send: int = 0
     pending_invoice_review: int = 0
-    invoice_needs_review: int = 0
     invoice_approved: int = 0
     ship_requested: int = 0
     shipped: int = 0
